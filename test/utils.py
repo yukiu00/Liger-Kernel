@@ -90,6 +90,30 @@ def get_qwen3_vl_rope_config() -> dict:
     }
 
 
+def get_qwen2_vl_rope_config() -> dict:
+    """
+    Get the correct rope configuration for Qwen2-VL and Qwen2.5-VL models.
+
+    In transformers v4.x: requires rope_scaling with type="mrope"
+    In transformers v5.0+: uses rope_parameters (v5 native style)
+
+    Returns:
+        dict: Configuration dictionary with appropriate rope config for the version
+    """
+    if is_transformers_v5_or_later():
+        return {
+            "rope_parameters": {
+                "mrope_section": [16, 24, 24],
+            },
+        }
+    return {
+        "rope_scaling": {
+            "type": "mrope",
+            "mrope_section": [16, 24, 24],
+        },
+    }
+
+
 def set_seed(seed=42):
     """
     Fix all random seeds we use for reproducibility.
