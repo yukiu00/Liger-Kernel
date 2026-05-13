@@ -11,6 +11,11 @@ import torch
 import triton
 import triton.language as tl
 
+try:
+    from torch.distributed.tensor import DTensor
+except ImportError:
+    DTensor = ()
+
 from liger_kernel.ops.utils import calculate_settings
 from liger_kernel.ops.utils import compare_version
 from liger_kernel.ops.utils import ensure_contiguous
@@ -442,7 +447,7 @@ class LigerModulatedRMSNormFunction(torch.autograd.Function):
     @staticmethod
     @ensure_contiguous
     def forward(ctx, X, W, scale, shift, eps, offset=0.0, casting_mode="llama", in_place=True):
-        if isinstance(X, torch.distributed.tensor.DTensor):
+        if isinstance(X, DTensor):
             # Match LigerRMSNormFunction: gather TP-sharded input to a local tensor.
             X = X.full_tensor()
         Y, RSTD, BLOCK_SIZE, num_warps, casting_mode, rows_per_modulation = modulated_rms_norm_forward(
@@ -475,7 +480,7 @@ class LigerModulatedRMSNormFunction(torch.autograd.Function):
     @staticmethod
     @ensure_contiguous
     def backward(ctx, dY):
-        if isinstance(dY, torch.distributed.tensor.DTensor):
+        if isinstance(dY, DTensor):
             dY = dY.full_tensor()
         if ctx.has_weight and ctx.has_shift:
             X, W, scale, shift, RSTD = ctx.saved_tensors

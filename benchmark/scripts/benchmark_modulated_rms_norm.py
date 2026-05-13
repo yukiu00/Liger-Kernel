@@ -83,6 +83,8 @@ def _setup_modulated_rms_norm(input: SingleBenchmarkRunInput):
         layer = LigerRMSNormWithNaiveModulation(hidden_size=hidden_size, eps=eps).to(device)
     elif input.kernel_provider == "huggingface":
         layer = NaiveModulatedRMSNorm(hidden_size=hidden_size, eps=eps).to(device)
+    elif input.kernel_provider == "torch_compile":
+        layer = torch.compile(NaiveModulatedRMSNorm(hidden_size=hidden_size, eps=eps).to(device))
     else:
         raise ValueError(f"Invalid provider: {input.kernel_provider} for ModulatedRMSNorm")
     return x, scale, shift, layer
@@ -174,7 +176,7 @@ if __name__ == "__main__":
             "x_name": "model_config",
             "x_label": "model configuration",
             "x_values": [cfg.name for cfg in sweep.model_configs],
-            "kernel_providers": ["liger", "liger_rms_norm", "huggingface"],
+            "kernel_providers": ["liger", "liger_rms_norm", "huggingface", "torch_compile"],
             "extra_benchmark_configs": [
                 {
                     "model_configs": model_configs_info,
@@ -228,7 +230,7 @@ if __name__ == "__main__":
             "x_name": "BT",
             "x_label": "B * T",
             "x_values": [2**i for i in range(10, int(math.log2(config.batch_size * config.seq_len)) + 1)],
-            "kernel_providers": ["liger", "liger_rms_norm", "huggingface"],
+            "kernel_providers": ["liger", "liger_rms_norm", "huggingface", "torch_compile"],
             "extra_benchmark_configs": [
                 {
                     "hidden_size": model.hidden_size,
